@@ -1,0 +1,11 @@
+DistroLogo 1.0 DistroLogo.qml
+Workspaces 1.0 Workspaces.qml
+WindowTitle 1.0 WindowTitle.qml
+Clock 1.0 Clock.qml
+HardwareStats 1.0 HardwareStats.qml
+Network 1.0 Network.qml
+HerdrBadge 1.0 HerdrBadge.qml
+AudioVolume 1.0 AudioVolume.qml
+Battery 1.0 Battery.qml
+SysTray 1.0 SysTray.qml
+PowerMenu 1.0 PowerMenu.qml

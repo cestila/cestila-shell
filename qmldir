@@ -1,0 +1,8 @@
+singleton Theme 1.0 Theme.qml
+singleton SidebarState 1.0 SidebarState.qml
+singleton PaletteState 1.0 PaletteState.qml
+singleton CalendarState 1.0 CalendarState.qml
+Bar 1.0 Bar.qml
+Sidebar 1.0 Sidebar.qml
+CommandPalette 1.0 CommandPalette.qml
+CalendarPopup 1.0 CalendarPopup.qml
