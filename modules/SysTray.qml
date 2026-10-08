@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Io
 import Quickshell.Services.SystemTray
+import ".."
 
 Item {
     id: root
@@ -13,49 +14,40 @@ Item {
     visible: trayRepeater.count > 0
 
     Process {
-        id: trayActionProc
+        id: focusProc
     }
 
-    function handleTrayClick(item, mouseButton) {
+    // Generic Hyprland window focus resolver
+    function focusAppWindow(item) {
         if (!item) return;
 
         var idStr = "" + (item.id || "");
         var titleStr = "" + (item.title || "");
-        var iconStr = "" + (item.icon || "");
-        var combined = (idStr + " " + titleStr + " " + iconStr).toLowerCase();
+        var script = [
+            "python3 -c '",
+            "import json, subprocess, sys;",
+            "tokens = [t.lower() for t in [\"" + idStr.replace(/"/g, "") + "\", \"" + titleStr.replace(/"/g, "") + "\"] if t];",
+            "clients = json.loads(subprocess.check_output([\"hyprctl\", \"clients\", \"-j\"]));",
+            "best = None;",
+            "for c in clients:",
+            "    c_cls = (c.get(\"class\") or \"\").lower();",
+            "    c_ini = (c.get(\"initialClass\") or \"\").lower();",
+            "    c_tit = (c.get(\"title\") or \"\").lower();",
+            "    for tok in tokens:",
+            "        if tok in c_cls or tok in c_ini or tok in c_tit:",
+            "            best = c; break;",
+            "        sub = tok.replace(\"desktop\", \"\").replace(\"-\", \"\").replace(\"_\", \"\");",
+            "        if len(sub) >= 4 and (sub in c_cls or sub in c_tit):",
+            "            best = c; break;",
+            "    if best: break;",
+            "if best:",
+            "    subprocess.run([\"hyprctl\", \"dispatch\", \"focuswindow\", \"address:\" + best[\"address\"]]);",
+            "'"
+        ].join(" ");
 
-        // 1. Standard StatusNotifierItem DBus invocation
-        try {
-            if (mouseButton === Qt.RightButton) {
-                if (typeof item.secondaryActivate === "function") {
-                    item.secondaryActivate();
-                }
-            } else {
-                if (typeof item.activate === "function") {
-                    item.activate();
-                }
-            }
-        } catch(e) {}
-
-        // 2. Hyprland workspace focus & window raising
-        var cmd = "";
-        if (combined.indexOf("zapzap") !== -1 || combined.indexOf("whatsapp") !== -1) {
-            cmd = "hyprctl dispatch focuswindow class:com.rtosta.zapzap";
-        } else if (combined.indexOf("remmina") !== -1) {
-            try { if (typeof item.secondaryActivate === "function") item.secondaryActivate(); } catch(e) {}
-            cmd = "hyprctl clients -j | grep -q 'org.remmina.Remmina' && hyprctl dispatch focuswindow class:org.remmina.Remmina || (remmina &)";
-        } else {
-            var candidate = item.id || item.title || "";
-            if (candidate && mouseButton === Qt.LeftButton) {
-                cmd = "hyprctl dispatch focuswindow " + candidate;
-            }
-        }
-
-        if (cmd) {
-            trayActionProc.running = false;
-            trayActionProc.command = ["bash", "-c", cmd];
-            trayActionProc.running = true;
-        }
+        focusProc.running = false;
+        focusProc.command = ["bash", "-c", script];
+        focusProc.running = true;
     }
 
     function resolveIcon(icon) {
@@ -88,13 +80,39 @@ Item {
                     source: root.resolveIcon(trayDelegate.modelData ? trayDelegate.modelData.icon : "")
                 }
 
+                // Native SNI DBus context menu anchor
+                QsMenuAnchor {
+                    id: menuAnchor
+                    anchor.window: trayDelegate.QsWindow.window
+                    anchor.item: trayDelegate
+                    menu: trayDelegate.modelData ? trayDelegate.modelData.menu : null
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                     onClicked: mouse => {
-                        root.handleTrayClick(trayDelegate.modelData, mouse.button);
+                        var it = trayDelegate.modelData;
+                        if (!it) return;
+
+                        if (mouse.button === Qt.RightButton) {
+                            // Right click: open native SNI menu if available (to quit, configure, etc.)
+                            if (it.hasMenu && it.menu) {
+                                menuAnchor.open();
+                            } else if (typeof it.secondaryActivate === "function") {
+                                try { it.secondaryActivate(); } catch(e) {}
+                            }
+                        } else {
+                            // Left click: activate via SNI and focus the window in Hyprland
+                            try {
+                                if (typeof it.activate === "function") {
+                                    it.activate();
+                                }
+                            } catch(e) {}
+                            root.focusAppWindow(it);
+                        }
                     }
                 }
             }
