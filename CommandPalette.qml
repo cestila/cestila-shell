@@ -11,6 +11,10 @@ PanelWindow {
     property var modelData: null
     screen: modelData
 
+    readonly property string thisScreenName: (modelData && modelData.name) ? modelData.name : (screen ? screen.name : "")
+    readonly property bool isTargetScreen: PaletteState.activeScreen !== "" ? (PaletteState.activeScreen === thisScreenName) : true
+    readonly property bool shouldBeOpen: PaletteState.paletteOpen && isTargetScreen
+
     anchors {
         top: true
         bottom: true
@@ -22,9 +26,9 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "cestila-palette"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: PaletteState.paletteOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: shouldBeOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
-    visible: PaletteState.paletteOpen
+    visible: shouldBeOpen
 
     property int selectedIndex: 0
 
@@ -55,7 +59,7 @@ PanelWindow {
 
     Process {
         id: appsProc
-        command: ["python3", "/home/cestila/CestilaNixOS/modules/home/cestila-shell/get_apps.py"]
+        command: ["bash", "-c", "python3 $(dirname $(readlink -f ~/.config/quickshell/cestila-shell/shell.qml 2>/dev/null || echo ~/.config/quickshell/cestila-shell))/get_apps.py"]
         stdout: StdioCollector {
             id: appsCol
             onStreamFinished: {

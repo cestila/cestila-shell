@@ -10,6 +10,10 @@ PanelWindow {
     property var modelData: null
     screen: modelData
 
+    readonly property string thisScreenName: (modelData && modelData.name) ? modelData.name : (screen ? screen.name : "")
+    readonly property bool isTargetScreen: CalendarState.activeScreen !== "" ? (CalendarState.activeScreen === thisScreenName) : true
+    readonly property bool shouldBeOpen: CalendarState.calendarOpen && isTargetScreen
+
     anchors {
         top: true
         bottom: true
@@ -21,9 +25,9 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: "cestila-calendar"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: CalendarState.visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: shouldBeOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-    visible: CalendarState.visible
+    visible: shouldBeOpen
 
     // State for viewing month/year
     property var today: new Date()
@@ -118,12 +122,12 @@ PanelWindow {
         onClicked: CalendarState.close()
     }
 
-    // Centered dropdown below the top bar
+    // Centered dropdown directly attached below the top bar
     Rectangle {
         id: calCard
         anchors {
             top: parent.top
-            topMargin: Theme.barHeight + 6
+            topMargin: Theme.barHeight
             horizontalCenter: parent.horizontalCenter
         }
         width: 320
