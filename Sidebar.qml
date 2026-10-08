@@ -11,24 +11,28 @@ PanelWindow {
     property var modelData: null
     screen: modelData
 
+    readonly property string thisScreenName: (modelData && modelData.name) ? modelData.name : (screen ? screen.name : "")
+    readonly property bool isTargetScreen: SidebarState.activeScreen !== "" ? (SidebarState.activeScreen === thisScreenName) : true
+    readonly property bool shouldBeOpen: SidebarState.sidebarOpen && isTargetScreen
+
     anchors {
         top: true
         bottom: true
         right: true
     }
 
-    margins {
-        top: Theme.barHeight
-    }
-
-    implicitWidth: SidebarState.sidebarOpen ? Theme.sidebarWidth : 0
+    // No margins.top — the bar's auto-exclusion zone already docks the panel directly under the bar.
+    // implicitWidth drives the exclusive zone: when open on THIS monitor it reserves 380px, shrinking tiled windows.
+    implicitWidth: shouldBeOpen ? Theme.sidebarWidth : 0
     color: "transparent"
     exclusionMode: ExclusionMode.Auto
     WlrLayershell.namespace: "cestila-sidebar"
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-    visible: SidebarState.sidebarOpen || slideAnim.running
+    // Remain visible on the target monitor during slide-out animation, then unmap cleanly.
+    // Instances on other monitors stay invisible and reserve 0px.
+    visible: isTargetScreen && (SidebarState.sidebarOpen || slideAnim.running)
 
     Rectangle {
         id: drawer
@@ -37,7 +41,7 @@ PanelWindow {
             bottom: parent.bottom
         }
         width: Theme.sidebarWidth
-        x: SidebarState.sidebarOpen ? 0 : width
+        x: sidebarWindow.shouldBeOpen ? 0 : width
         color: Theme.surfaceLow
 
         Behavior on x {

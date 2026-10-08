@@ -12,9 +12,9 @@
     force = true;
   };
 
-  # Run the shell as a user service bound to the Hyprland session so it always
-  # uses the declarative quickshell binary (never a stale PATH entry) and is
-  # restarted if it crashes.
+  # Run the shell as a user service pointing directly to the workspace config
+  # so code edits are immediately active with a restart (or qs reload) without
+  # having to do a full nixos-rebuild for every QML tweak.
   systemd.user.services.cestila-shell = {
     Unit = {
       Description = "Cestila Shell (Quickshell top bar, sidebar and launcher)";
@@ -22,7 +22,7 @@
       After = ["hyprland-session.target"];
     };
     Service = {
-      ExecStart = "${pkgs.quickshell}/bin/quickshell -c cestila-shell";
+      ExecStart = "${pkgs.quickshell}/bin/quickshell -p /home/cestila/CestilaNixOS/modules/home/cestila-shell/shell.qml";
       Restart = "on-failure";
       RestartSec = 2;
     };
