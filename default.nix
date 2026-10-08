@@ -4,6 +4,9 @@
   pkgs,
   ...
 }: {
+  # The shell provides its own network and bluetooth indicators.
+  imports = [../hide-tray-applets.nix];
+
   xdg.configFile."quickshell/cestila-shell" = {
     source = ./.;
     force = true;
