@@ -249,6 +249,8 @@ Item {
         attachProc.running = true;
     }
 
+    property bool collapsed: false
+
     ColumnLayout {
         id: mainCol
         anchors {
@@ -257,47 +259,81 @@ Item {
         }
         spacing: Theme.spacingMd
 
-        // Header: "HERDR ORCHESTRATOR" + active badge "[3 ONLINE]"
-        RowLayout {
+        // Header: "HERDR ORCHESTRATOR" + active badge "[3 ONLINE]" + accordion chevron
+        Rectangle {
             Layout.fillWidth: true
-            spacing: Theme.spacingSm
+            implicitHeight: 32
+            color: accordMouse.containsMouse ? Theme.surfaceHigh : "transparent"
+            radius: Theme.radiusMicro
 
-            Text {
-                text: "HERDR ORCHESTRATOR"
-                font.family: Theme.monoFamily
-                font.pixelSize: Theme.fontSmall
-                font.weight: Font.Bold
-                font.letterSpacing: 1.0
-                color: Theme.textSecondary
-                Layout.alignment: Qt.AlignVCenter
-            }
+            Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
-            Item { Layout.fillWidth: true }
-
-            Rectangle {
-                implicitHeight: 20
-                implicitWidth: badgeText.implicitWidth + 12
-                radius: Theme.radiusMicro
-                color: Theme.accentDim
-                border.color: Theme.accent
-                border.width: 1
-                Layout.alignment: Qt.AlignVCenter
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.spacingSm
+                anchors.rightMargin: Theme.spacingSm
+                spacing: Theme.spacingSm
 
                 Text {
-                    id: badgeText
-                    anchors.centerIn: parent
-                    text: "[" + root.onlineCount + " ONLINE]"
+                    text: root.collapsed ? "󰅂" : "󰅃"
                     font.family: Theme.monoFamily
-                    font.pixelSize: Theme.fontMicro
-                    font.weight: Font.Bold
+                    font.pixelSize: Theme.fontSmall
                     color: Theme.accent
+                    Layout.alignment: Qt.AlignVCenter
                 }
+
+                Text {
+                    text: "HERDR ORCHESTRATOR"
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.fontSmall
+                    font.weight: Font.Bold
+                    font.letterSpacing: 1.0
+                    color: Theme.textSecondary
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Item { Layout.fillWidth: true }
+
+                Rectangle {
+                    implicitHeight: 20
+                    implicitWidth: badgeText.implicitWidth + 12
+                    radius: Theme.radiusMicro
+                    color: Theme.accentDim
+                    border.color: Theme.accent
+                    border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Text {
+                        id: badgeText
+                        anchors.centerIn: parent
+                        text: "[" + root.onlineCount + " ONLINE]"
+                        font.family: Theme.monoFamily
+                        font.pixelSize: Theme.fontMicro
+                        font.weight: Font.Bold
+                        color: Theme.accent
+                    }
+                }
+            }
+
+            MouseArea {
+                id: accordMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                onClicked: root.collapsed = !root.collapsed
             }
         }
 
-        // Vitals Card in Theme.surfaceBase: CPU aggregate %, RAM ("1.4GB / 32GB"), active workers
-        Rectangle {
+        // Accordion collapsible body
+        ColumnLayout {
+            id: accordContent
             Layout.fillWidth: true
+            spacing: Theme.spacingMd
+            visible: !root.collapsed
+
+            // Vitals Card in Theme.surfaceBase: CPU aggregate %, RAM ("1.4GB / 32GB"), active workers
+            Rectangle {
+                Layout.fillWidth: true
             implicitHeight: vitalsRow.implicitHeight + (Theme.spacingSm * 2)
             color: Theme.surfaceBase
             radius: Theme.radiusMicro
@@ -598,4 +634,5 @@ Item {
             }
         }
     }
+}
 }

@@ -7,7 +7,7 @@ QtObject {
     property string activeCategory: "All"
     property string searchQuery: ""
 
-    readonly property var categories: ["All", "Apps", "Projects", "Herdr", "Clipboard"]
+    readonly property var categories: ["All", "Apps", "Projects", "Herdr", "VPN", "Clipboard"]
 
     function toggle() {
         paletteOpen = !paletteOpen;

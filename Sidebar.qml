@@ -17,10 +17,15 @@ PanelWindow {
         right: true
     }
 
-    implicitWidth: Theme.sidebarWidth
+    margins {
+        top: Theme.barHeight
+    }
+
+    implicitWidth: SidebarState.sidebarOpen ? Theme.sidebarWidth : 0
     color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.layer: WlrLayer.Overlay
+    exclusionMode: ExclusionMode.Auto
+    WlrLayershell.namespace: "cestila-sidebar"
+    WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     visible: SidebarState.sidebarOpen || slideAnim.running

@@ -20,6 +20,7 @@ PanelWindow {
 
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.namespace: "cestila-palette"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: PaletteState.paletteOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
@@ -38,6 +39,15 @@ PanelWindow {
     // Process executor
     Process {
         id: execProc
+        property var cmd: []
+        command: cmd
+        stderr: StdioCollector {
+            onStreamFinished: {
+                if (text && text.trim().length > 0) {
+                    console.warn("[CommandPalette] exec error:", text.trim());
+                }
+            }
+        }
     }
 
     // Desktop Apps discovery process
@@ -65,6 +75,48 @@ PanelWindow {
 
     Component.onCompleted: {
         appsProc.running = true;
+    }
+
+    // VPN discovery process
+    property var vpnItems: []
+
+    Process {
+        id: vpnProc
+        command: ["sh", "-c", "nmcli -t -f NAME,TYPE,ACTIVE connection show 2>/dev/null | awk -F: '$2 ~ /vpn|wireguard|openconnect|tailscale/ {print $1 \"|\" $2 \"|\" $3}'"]
+        stdout: StdioCollector {
+            id: vpnCol
+            onStreamFinished: {
+                try {
+                    var raw = vpnCol.text.trim();
+                    var items = [];
+                    if (raw) {
+                        var lines = raw.split("\n");
+                        for (var i = 0; i < lines.length; i++) {
+                            var line = lines[i].trim();
+                            if (!line) continue;
+                            var parts = line.split("|");
+                            if (parts.length >= 2) {
+                                var vpnName = parts[0];
+                                var vpnType = parts[1] === "wireguard" ? "WireGuard" : "VPN";
+                                var isConnected = parts.length >= 3 && parts[2] === "yes";
+                                items.push({
+                                    title: vpnName,
+                                    subtitle: (isConnected ? "● Conectado • " : "○ Desconectado • ") + vpnType + " Network",
+                                    category: "VPN",
+                                    badge: "VPN",
+                                    shortcut: isConnected ? "[↵ Disconnect]" : "[↵ Connect]",
+                                    vpnName: vpnName,
+                                    vpnActive: isConnected
+                                });
+                            }
+                        }
+                    }
+                    paletteWindow.vpnItems = items;
+                } catch(e) {
+                    console.warn("[CommandPalette] Failed to parse VPNs:", e);
+                }
+            }
+        }
     }
 
     // Cliphist reader process
@@ -369,6 +421,9 @@ PanelWindow {
         for (var i = 0; i < allItems.length; i++) {
             list.push(allItems[i]);
         }
+        for (var v = 0; v < vpnItems.length; v++) {
+            list.push(vpnItems[v]);
+        }
         for (var j = 0; j < clipboardItems.length; j++) {
             list.push(clipboardItems[j]);
         }
@@ -408,7 +463,7 @@ PanelWindow {
     function runAction(commandArray) {
         if (!commandArray || commandArray.length === 0) return;
         execProc.running = false;
-        execProc.command = commandArray;
+        execProc.cmd = commandArray;
         execProc.running = true;
         PaletteState.close();
     }
@@ -416,7 +471,7 @@ PanelWindow {
     function copyToClipboard(text) {
         if (!text) return;
         execProc.running = false;
-        execProc.command = ["wl-copy", text];
+        execProc.cmd = ["wl-copy", text];
         execProc.running = true;
         PaletteState.close();
     }
@@ -424,13 +479,23 @@ PanelWindow {
     function openProjectInEditor(projectPath) {
         if (!projectPath) return;
         execProc.running = false;
-        execProc.command = ["hyprctl", "dispatch", "exec", "ghostty --working-directory=" + projectPath + " -e nvim"];
+        execProc.cmd = ["hyprctl", "dispatch", "exec", "ghostty --working-directory=" + projectPath + " -e nvim"];
         execProc.running = true;
         PaletteState.close();
     }
 
+    function toggleVpn(item) {
+        if (!item || !item.vpnName) return;
+        var cmd = item.vpnActive ? ["nmcli", "connection", "down", item.vpnName] : ["nmcli", "connection", "up", item.vpnName];
+        runAction(cmd);
+    }
+
     function executeItem(item) {
         if (!item) return;
+        if (item.category === "VPN") {
+            toggleVpn(item);
+            return;
+        }
         if (item.category === "Clipboard" && item.clipText) {
             copyToClipboard(item.clipText);
             return;
@@ -474,6 +539,7 @@ PanelWindow {
             if (PaletteState.paletteOpen) {
                 searchInput.text = "";
                 selectedIndex = 0;
+                vpnProc.running = true;
                 cliphistProc.running = true;
                 if (paletteWindow.discoveredApps.length === 0) {
                     appsProc.running = true;
@@ -483,50 +549,66 @@ PanelWindow {
         }
     }
 
-    // Dimmed backdrop scrim: Rectangle { anchors.fill: parent; color: "#000000"; opacity: 0.65; MouseArea { anchors.fill: parent; onClicked: PaletteState.close() } }
-    Rectangle {
+    // Transparent clickaway dismiss area (NO dark scrim, does not dim the screen)
+    MouseArea {
         anchors.fill: parent
-        color: "#000000"
-        opacity: 0.65
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: PaletteState.close()
-        }
+        hoverEnabled: false
+        onClicked: PaletteState.close()
     }
 
-    // Subtle violet ambient shadow / glow
-    Rectangle {
-        anchors.fill: modalBox
-        anchors.margins: -4
-        radius: Theme.radiusCard + 3
-        color: "transparent"
-        border.color: Theme.accent
-        border.width: 2
-        opacity: 0.20
-    }
-
-    Rectangle {
-        anchors.fill: modalBox
-        anchors.margins: -1
-        radius: Theme.radiusCard + 1
-        color: "transparent"
-        border.color: Theme.accentBright
-        border.width: 1
-        opacity: 0.40
-    }
-
-    // Centered Modal Box
+    // Dropdown Palette Panel — seamlessly attached & unfolds from the top bar
     Rectangle {
         id: modalBox
-        anchors.centerIn: parent
+        anchors.horizontalCenter: parent.horizontalCenter
         width: Theme.paletteWidth
         height: Theme.paletteHeight
+
+        // Smooth slide-down unfolding animation directly from the bar bottom
+        y: PaletteState.paletteOpen ? Theme.barHeight : (Theme.barHeight - 20)
+        opacity: PaletteState.paletteOpen ? 1.0 : 0.0
+
+        Behavior on y {
+            NumberAnimation {
+                duration: Theme.animNormal
+                easing.type: Easing.OutCubic
+            }
+        }
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Theme.animFast
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        // Bottom rounded corners only; seamlessly flush with the top bar
         radius: Theme.radiusCard
         color: Theme.surfaceBase
         border.width: 1
         border.color: Theme.borderFocused
         clip: true
+
+        // Top bar connector line matching the bar's bottom edge color
+        Rectangle {
+            anchors {
+                top: parent.top
+                left: parent.left
+                right: parent.right
+            }
+            height: 1
+            color: Theme.accentDim
+        }
+
+        // Subtle bottom/side glow shadow to emphasize depth below the bar
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -1
+            radius: Theme.radiusCard
+            color: "transparent"
+            border.color: Theme.accentBright
+            border.width: 1
+            opacity: 0.35
+            z: -1
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -629,7 +711,7 @@ PanelWindow {
                         Text {
                             anchors.fill: parent
                             verticalAlignment: Text.AlignVCenter
-                            text: "Type a command, search apps, git repos, or herdr tasks..."
+                            text: "Type a command, search apps, VPNs, git repos, or herdr tasks..."
                             font.family: Theme.fontFamily
                             font.pixelSize: Theme.fontMedium
                             color: Theme.textMuted
@@ -889,6 +971,7 @@ PanelWindow {
                             if (itemDelegate.modelData.category === "Apps") return Theme.stateIdleBg;
                             if (itemDelegate.modelData.category === "Projects") return Theme.stateRunningBg;
                             if (itemDelegate.modelData.category === "Herdr") return Theme.accentFaint;
+                            if (itemDelegate.modelData.category === "VPN") return itemDelegate.modelData.vpnActive ? Theme.stateRunningBg : Theme.surfaceHigh;
                             if (itemDelegate.modelData.category === "Clipboard") return Theme.stateBlockedBg;
                             return Theme.surfaceElevated;
                         }
@@ -897,6 +980,7 @@ PanelWindow {
                             if (itemDelegate.modelData.category === "Apps") return Theme.stateIdle;
                             if (itemDelegate.modelData.category === "Projects") return Theme.stateRunning;
                             if (itemDelegate.modelData.category === "Herdr") return Theme.accent;
+                            if (itemDelegate.modelData.category === "VPN") return itemDelegate.modelData.vpnActive ? Theme.stateRunning : Theme.borderFocused;
                             if (itemDelegate.modelData.category === "Clipboard") return Theme.stateBlocked;
                             return Theme.borderMuted;
                         }
@@ -921,6 +1005,7 @@ PanelWindow {
                                 if (itemDelegate.modelData.category === "Apps") return Theme.stateIdle;
                                 if (itemDelegate.modelData.category === "Projects") return Theme.stateRunning;
                                 if (itemDelegate.modelData.category === "Herdr") return Theme.accentBright;
+                                if (itemDelegate.modelData.category === "VPN") return itemDelegate.modelData.vpnActive ? Theme.stateRunning : Theme.accentBright;
                                 if (itemDelegate.modelData.category === "Clipboard") return Theme.stateBlocked;
                                 return Theme.textSecondary;
                             }

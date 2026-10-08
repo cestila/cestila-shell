@@ -4,5 +4,8 @@
   pkgs,
   ...
 }: {
-  xdg.configFile."quickshell/cestila-shell".source = ./.;
+  xdg.configFile."quickshell/cestila-shell" = {
+    source = ./.;
+    force = true;
+  };
 }

@@ -19,6 +19,7 @@ PanelWindow {
     implicitHeight: Theme.barHeight
     color: "transparent"
     exclusionMode: ExclusionMode.Auto
+    WlrLayershell.namespace: "cestila-bar"
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 

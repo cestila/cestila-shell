@@ -46,6 +46,8 @@ Item {
         }
     }
 
+    property bool collapsed: false
+
     ColumnLayout {
         id: mainCol
         anchors {
@@ -54,62 +56,96 @@ Item {
         }
         spacing: Theme.spacingMd
 
-        // Header: "NOTIFICATIONS" + count badge + "Clear All" link
-        RowLayout {
+        // Header: "NOTIFICATIONS" + count badge + "Clear All" link + accordion chevron
+        Rectangle {
             Layout.fillWidth: true
-            spacing: Theme.spacingSm
+            implicitHeight: 32
+            color: accordMouse.containsMouse ? Theme.surfaceHigh : "transparent"
+            radius: Theme.radiusMicro
 
-            Text {
-                text: "NOTIFICATIONS"
-                font.family: Theme.monoFamily
-                font.pixelSize: Theme.fontSmall
-                font.weight: Font.Bold
-                font.letterSpacing: 1.0
-                color: Theme.textSecondary
-                Layout.alignment: Qt.AlignVCenter
+            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+
+            MouseArea {
+                id: accordMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                onClicked: root.collapsed = !root.collapsed
             }
 
-            Rectangle {
-                implicitHeight: 18
-                implicitWidth: countText.implicitWidth + 10
-                radius: Theme.radiusPill
-                color: notiModel.count > 0 ? Theme.accentDim : Theme.surfaceElevated
-                border.color: notiModel.count > 0 ? Theme.accent : Theme.borderSubtle
-                border.width: 1
-                Layout.alignment: Qt.AlignVCenter
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.spacingSm
+                anchors.rightMargin: Theme.spacingSm
+                spacing: Theme.spacingSm
 
                 Text {
-                    id: countText
-                    anchors.centerIn: parent
-                    text: notiModel.count.toString()
+                    text: root.collapsed ? "󰅂" : "󰅃"
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.fontSmall
+                    color: Theme.accent
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Text {
+                    text: "NOTIFICATIONS"
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.fontSmall
+                    font.weight: Font.Bold
+                    font.letterSpacing: 1.0
+                    color: Theme.textSecondary
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Rectangle {
+                    implicitHeight: 18
+                    implicitWidth: countText.implicitWidth + 10
+                    radius: Theme.radiusPill
+                    color: notiModel.count > 0 ? Theme.accentDim : Theme.surfaceElevated
+                    border.color: notiModel.count > 0 ? Theme.accent : Theme.borderSubtle
+                    border.width: 1
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Text {
+                        id: countText
+                        anchors.centerIn: parent
+                        text: notiModel.count.toString()
+                        font.family: Theme.monoFamily
+                        font.pixelSize: Theme.fontMicro
+                        font.weight: Font.Bold
+                        color: notiModel.count > 0 ? Theme.accent : Theme.textMuted
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                Text {
+                    id: clearAllBtn
+                    text: "Clear All"
                     font.family: Theme.monoFamily
                     font.pixelSize: Theme.fontMicro
-                    font.weight: Font.Bold
-                    color: notiModel.count > 0 ? Theme.accent : Theme.textMuted
-                }
-            }
+                    font.weight: Font.Medium
+                    color: clearMouse.containsMouse ? Theme.accentBright : Theme.textMuted
+                    visible: notiModel.count > 0
+                    Layout.alignment: Qt.AlignVCenter
 
-            Item { Layout.fillWidth: true }
-
-            Text {
-                id: clearAllBtn
-                text: "Clear All"
-                font.family: Theme.monoFamily
-                font.pixelSize: Theme.fontMicro
-                font.weight: Font.Medium
-                color: clearMouse.containsMouse ? Theme.accentBright : Theme.textMuted
-                visible: notiModel.count > 0
-                Layout.alignment: Qt.AlignVCenter
-
-                MouseArea {
-                    id: clearMouse
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    hoverEnabled: true
-                    onClicked: root.clearAll()
+                    MouseArea {
+                        id: clearMouse
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        onClicked: root.clearAll()
+                    }
                 }
             }
         }
+
+        // Accordion collapsible body
+        ColumnLayout {
+            id: accordContent
+            Layout.fillWidth: true
+            spacing: Theme.spacingSm
+            visible: !root.collapsed
 
         // Empty state
         Rectangle {
@@ -250,4 +286,5 @@ Item {
             }
         }
     }
+}
 }

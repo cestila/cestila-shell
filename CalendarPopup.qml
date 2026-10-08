@@ -19,6 +19,7 @@ PanelWindow {
 
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.namespace: "cestila-calendar"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: CalendarState.visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 

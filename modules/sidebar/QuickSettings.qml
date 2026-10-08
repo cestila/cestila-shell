@@ -263,6 +263,8 @@ Item {
         onTriggered: root.refreshAll()
     }
 
+    property bool collapsed: false
+
     ColumnLayout {
         id: mainCol
         anchors {
@@ -271,15 +273,57 @@ Item {
         }
         spacing: Theme.spacingMd
 
-        // Header: "QUICK SETTINGS"
-        Text {
-            text: "QUICK SETTINGS"
-            font.family: Theme.monoFamily
-            font.pixelSize: Theme.fontSmall
-            font.weight: Font.Bold
-            font.letterSpacing: 1.0
-            color: Theme.textSecondary
+        // Header: "QUICK SETTINGS" + accordion chevron
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 32
+            color: accordMouse.containsMouse ? Theme.surfaceHigh : "transparent"
+            radius: Theme.radiusMicro
+
+            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.spacingSm
+                anchors.rightMargin: Theme.spacingSm
+                spacing: Theme.spacingSm
+
+                Text {
+                    text: root.collapsed ? "󰅂" : "󰅃"
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.fontSmall
+                    color: Theme.accent
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Text {
+                    text: "QUICK SETTINGS"
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.fontSmall
+                    font.weight: Font.Bold
+                    font.letterSpacing: 1.0
+                    color: Theme.textSecondary
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Item { Layout.fillWidth: true }
+            }
+
+            MouseArea {
+                id: accordMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                onClicked: root.collapsed = !root.collapsed
+            }
         }
+
+        // Accordion collapsible body
+        ColumnLayout {
+            id: accordContent
+            Layout.fillWidth: true
+            spacing: Theme.spacingMd
+            visible: !root.collapsed
 
         // 2x2 Grid of Quick Toggles
         GridLayout {
@@ -1185,4 +1229,5 @@ Item {
             }
         }
     }
+}
 }
