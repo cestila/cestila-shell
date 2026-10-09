@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 
 Item {
     id: root
@@ -9,19 +10,31 @@ Item {
     property bool sidebarOpen: false
     property string activeScreen: ""
 
-    // Query hyprctl synchronously before setting open state
-    // so we always have the exact active monitor at the instant of opening
+    // Initial monitor detection on startup
     Process {
-        id: openProc
+        id: initProc
         command: ["bash", "-c", "hyprctl monitors -j 2>/dev/null | python3 -c 'import json,sys; ms=json.load(sys.stdin); print(next((m[\"name\"] for m in ms if m.get(\"focused\")), \"\"))'"]
+        running: true
         stdout: StdioCollector {
-            id: outCol
             onStreamFinished: {
-                var mon = outCol.text.trim();
-                if (mon) {
+                var mon = text.trim();
+                if (mon && root.activeScreen === "") {
                     root.activeScreen = mon;
                 }
-                root.sidebarOpen = true;
+            }
+        }
+    }
+
+    // Keep activeScreen immediately in sync whenever Hyprland switches monitor focus
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (!event) return;
+            if (event.name === "focusedmon" || event.name === "focusedmonv2") {
+                var monName = event.data.split(",")[0].trim();
+                if (monName) {
+                    root.activeScreen = monName;
+                }
             }
         }
     }
@@ -35,8 +48,7 @@ Item {
     }
 
     function open() {
-        openProc.running = false;
-        openProc.running = true;
+        sidebarOpen = true;
     }
 
     function close() {
