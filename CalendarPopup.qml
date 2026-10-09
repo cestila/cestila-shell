@@ -7,7 +7,7 @@ import "."
 PanelWindow {
     id: calWindow
 
-    property var modelData: null
+    required property var modelData
     screen: modelData
 
     readonly property string thisScreenName: (modelData && modelData.name) ? modelData.name : (screen ? screen.name : "")

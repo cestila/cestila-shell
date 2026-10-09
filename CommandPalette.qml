@@ -8,7 +8,7 @@ import "."
 
 PanelWindow {
     id: paletteWindow
-    property var modelData: null
+    required property var modelData
     screen: modelData
 
     readonly property string thisScreenName: (modelData && modelData.name) ? modelData.name : (screen ? screen.name : "")
@@ -86,7 +86,7 @@ PanelWindow {
 
     Process {
         id: vpnProc
-        command: ["sh", "-c", "nmcli -t -f NAME,TYPE,ACTIVE connection show 2>/dev/null | awk -F: '$2 ~ /vpn|wireguard|openconnect|tailscale/ {print $1 \"|\" $2 \"|\" $3}'"]
+        command: ["sh", "-c", "nmcli -t -f NAME,TYPE,ACTIVE connection show 2>/dev/null | awk -F: '$2 ~ /vpn|wireguard|openconnect|tailscale/ {print $1 \"|\" $2 \"|\" $3}' | while IFS='|' read -r n t a; do if [ \"$n\" = \"MunJK-Forti\" ] && systemctl is-active --quiet openconnect-munijk.service 2>/dev/null; then a=\"yes\"; elif [ \"$n\" = \"Slots\" ] && systemctl is-active --quiet openconnect-slots.service 2>/dev/null; then a=\"yes\"; fi; echo \"$n|$t|$a\"; done"]
         stdout: StdioCollector {
             id: vpnCol
             onStreamFinished: {
@@ -490,7 +490,7 @@ PanelWindow {
 
     function toggleVpn(item) {
         if (!item || !item.vpnName) return;
-        var cmd = item.vpnActive ? ["nmcli", "connection", "down", item.vpnName] : ["nmcli", "connection", "up", item.vpnName];
+        var cmd = item.vpnActive ? ["vpn-ctl", item.vpnName, "down"] : ["vpn-ctl", item.vpnName, "up"];
         runAction(cmd);
     }
 

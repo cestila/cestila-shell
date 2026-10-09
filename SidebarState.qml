@@ -8,24 +8,18 @@ Item {
     id: root
 
     property bool sidebarOpen: false
-    property string activeScreen: ""
 
-    // Initial monitor detection on startup
-    Process {
-        id: initProc
-        command: ["bash", "-c", "hyprctl monitors -j 2>/dev/null | python3 -c 'import json,sys; ms=json.load(sys.stdin); print(next((m[\"name\"] for m in ms if m.get(\"focused\")), \"\"))'"]
-        running: true
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var mon = text.trim();
-                if (mon && root.activeScreen === "") {
-                    root.activeScreen = mon;
-                }
-            }
+    // Automatically track focused monitor via native Quickshell.Hyprland
+    readonly property string focusedMonitorName: (Hyprland.focusedMonitor && Hyprland.focusedMonitor.name) ? Hyprland.focusedMonitor.name : ""
+    property string activeScreen: focusedMonitorName
+
+    onFocusedMonitorNameChanged: {
+        if (focusedMonitorName !== "") {
+            activeScreen = focusedMonitorName;
         }
     }
 
-    // Keep activeScreen immediately in sync whenever Hyprland switches monitor focus
+    // Keep activeScreen immediately in sync on raw events as well
     Connections {
         target: Hyprland
         function onRawEvent(event) {

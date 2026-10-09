@@ -71,7 +71,7 @@ Item {
 
     Process {
         id: getVpnProc
-        command: ["sh", "-c", "nmcli -t -f NAME,TYPE,ACTIVE connection show 2>/dev/null | grep -E ':(vpn|wireguard):'"]
+        command: ["sh", "-c", "nmcli -t -f NAME,TYPE,ACTIVE connection show 2>/dev/null | grep -E ':(vpn|wireguard):' | while IFS=: read -r n t a; do if [ \"$n\" = \"MunJK-Forti\" ] && systemctl is-active --quiet openconnect-munijk.service 2>/dev/null; then a=\"yes\"; elif [ \"$n\" = \"Slots\" ] && systemctl is-active --quiet openconnect-slots.service 2>/dev/null; then a=\"yes\"; fi; echo \"$n:$t:$a\"; done"]
         stdout: StdioCollector {
             id: vpnCol
             onStreamFinished: {
@@ -218,9 +218,9 @@ Item {
 
     function toggleVpnConnection(vpnName, isCurrentlyActive) {
         if (isCurrentlyActive) {
-            runCmd(["nmcli", "connection", "down", "id", vpnName]);
+            runCmd(["vpn-ctl", vpnName, "down"]);
         } else {
-            runCmd(["nmcli", "connection", "up", "id", vpnName]);
+            runCmd(["vpn-ctl", vpnName, "up"]);
         }
         refreshVpnTimer.restart();
     }
