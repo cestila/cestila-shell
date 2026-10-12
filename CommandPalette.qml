@@ -246,8 +246,8 @@ PanelWindow {
             category: "Apps",
             badge: "APP",
             shortcut: "[↵ Run]",
-            path: "/home/cestila/CestilaNixOS/modules/home/hyprland/default.nix",
-            command: ["hyprctl", "dispatch", "exec", "ghostty -e nvim /home/cestila/CestilaNixOS/modules/home/hyprland/default.nix"]
+            path: "/home/cestila/workspace/Personales/CestilaNixOS/modules/home/hyprland/default.nix",
+            command: ["hyprctl", "dispatch", "exec", "ghostty -e nvim /home/cestila/workspace/Personales/CestilaNixOS/modules/home/hyprland/default.nix"]
         },
         {
             title: "NixOS Rebuild Switch",
@@ -255,7 +255,7 @@ PanelWindow {
             category: "Apps",
             badge: "APP",
             shortcut: "[↵ Run]",
-            command: ["hyprctl", "dispatch", "exec", "ghostty -e bash -c 'cd /home/cestila/CestilaNixOS && nh os switch; read -p \"Press enter to close...\"'"]
+            command: ["hyprctl", "dispatch", "exec", "ghostty -e bash -c 'cnixcli rebuild; read -p \"Press enter to close...\"'"]
         },
         {
             title: "Notification Center",
@@ -277,12 +277,12 @@ PanelWindow {
         // Git Projects
         {
             title: "CestilaNixOS",
-            subtitle: "~/CestilaNixOS • Flake & Quickshell Desktop System",
+            subtitle: "~/workspace/Personales/CestilaNixOS • Flake & Quickshell Desktop System",
             category: "Projects",
             badge: "GIT",
             shortcut: "[Ctrl+E Editor]",
-            path: "/home/cestila/CestilaNixOS",
-            command: ["hyprctl", "dispatch", "exec", "ghostty --working-directory=/home/cestila/CestilaNixOS -e nvim"]
+            path: "/home/cestila/workspace/Personales/CestilaNixOS",
+            command: ["hyprctl", "dispatch", "exec", "ghostty --working-directory=/home/cestila/workspace/Personales/CestilaNixOS -e nvim"]
         },
         {
             title: "Herdr Workspace",

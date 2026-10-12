@@ -22,7 +22,7 @@
       After = ["hyprland-session.target"];
     };
     Service = {
-      ExecStart = "${pkgs.quickshell}/bin/quickshell -p /home/cestila/CestilaNixOS/modules/home/cestila-shell/shell.qml";
+      ExecStart = "${pkgs.quickshell}/bin/quickshell -p %h/.config/quickshell/cestila-shell/shell.qml";
       Restart = "on-failure";
       RestartSec = 2;
     };
